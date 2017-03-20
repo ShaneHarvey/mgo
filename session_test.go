@@ -1194,6 +1194,10 @@ func (s *S) TestCountCollection(c *C) {
 	n, err := coll.Count()
 	c.Assert(err, IsNil)
 	c.Assert(n, Equals, 3)
+
+	n, err := coll.Count64()
+	c.Assert(err, IsNil)
+	c.Assert(n, Equals, int64(3))
 }
 
 func (s *S) TestCountQuery(c *C) {
@@ -1212,6 +1216,10 @@ func (s *S) TestCountQuery(c *C) {
 	n, err := coll.Find(M{"n": M{"$gt": 40}}).Count()
 	c.Assert(err, IsNil)
 	c.Assert(n, Equals, 2)
+
+	n64, err := coll.Find(M{"n": M{"$gt": 40}}).Count64()
+	c.Assert(err, IsNil)
+	c.Assert(n, Equals, int64(2))
 }
 
 func (s *S) TestCountQuerySorted(c *C) {
@@ -1230,6 +1238,10 @@ func (s *S) TestCountQuerySorted(c *C) {
 	n, err := coll.Find(M{"n": M{"$gt": 40}}).Sort("n").Count()
 	c.Assert(err, IsNil)
 	c.Assert(n, Equals, 2)
+
+	n64, err := coll.Find(M{"n": M{"$gt": 40}}).Sort("n").Count()
+	c.Assert(err, IsNil)
+	c.Assert(n, Equals, int64(2))
 }
 
 func (s *S) TestCountSkipLimit(c *C) {
@@ -1249,9 +1261,17 @@ func (s *S) TestCountSkipLimit(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(n, Equals, 3)
 
+	n64, err := coll.Find(nil).Skip(1).Limit(3).Count64()
+	c.Assert(err, IsNil)
+	c.Assert(n, Equals, int64(3))
+
 	n, err = coll.Find(nil).Skip(1).Limit(5).Count()
 	c.Assert(err, IsNil)
 	c.Assert(n, Equals, 4)
+
+	n64, err = coll.Find(nil).Skip(1).Limit(5).Count()
+	c.Assert(err, IsNil)
+	c.Assert(n, Equals, int64(4))
 }
 
 func (s *S) TestQueryExplain(c *C) {
