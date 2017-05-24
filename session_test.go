@@ -221,7 +221,7 @@ func (s *S) TestReadableServer(c *C) {
 		c.Fatalf("secondary_address should be in %v, not: %v", valid_addresses, secondary_address)
 	}
 
-	c.Assert(err, primary_address, Not(Equals), secondary_address)
+	c.Assert(primary_address, Not(Equals), secondary_address)
 }
 
 func (s *S) TestInsertFindOne(c *C) {
