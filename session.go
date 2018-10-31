@@ -4767,15 +4767,20 @@ func (c *Collection) writeOp(op interface{}, ordered bool) (lerr *LastError, err
 	bypassValidation := s.bypassValidation
 	s.m.RUnlock()
 
-	if socket.ServerInfo().MaxWireVersion >= 2 {
+	serverInfo := socket.ServerInfo()
+	if serverInfo.MaxWireVersion >= 2 {
 		// Servers with a more recent write protocol benefit from write commands.
-		if op, ok := op.(*insertOp); ok && len(op.documents) > 1000 {
+		maxWriteBatchSize := 1000
+		if serverInfo.MaxWriteBatchSize != 0 {
+			maxWriteBatchSize = serverInfo.MaxWriteBatchSize
+		}
+		if op, ok := op.(*insertOp); ok && len(op.documents) > maxWriteBatchSize {
 			var lerr LastError
 
-			// Maximum batch size is 1000. Must split out in separate operations for compatibility.
+			// Split out in separate operations according to maxWriteBatchSize.
 			all := op.documents
-			for i := 0; i < len(all); i += 1000 {
-				l := i + 1000
+			for i := 0; i < len(all); i += maxWriteBatchSize {
+				l := i + maxWriteBatchSize
 				if l > len(all) {
 					l = len(all)
 				}

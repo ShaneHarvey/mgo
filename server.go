@@ -68,11 +68,12 @@ func (dial dialer) isSet() bool {
 }
 
 type mongoServerInfo struct {
-	Master         bool
-	Mongos         bool
-	Tags           bson.D
-	MaxWireVersion int
-	SetName        string
+	Master            bool
+	Mongos            bool
+	Tags              bson.D
+	MaxWireVersion    int
+	SetName           string
+	MaxWriteBatchSize int
 }
 
 var defaultServerInfo mongoServerInfo
