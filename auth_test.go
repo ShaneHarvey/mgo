@@ -42,6 +42,9 @@ import (
 	"gopkg.in/mgo.v2"
 )
 
+var NoUserUnauthorizedErrorRegex = "unauthorized|need to login|not authorized .*|.* requires authentication"
+var UnauthorizedErrorRegex = "unauthorized|not authorized .*|.* requires authentication"
+
 func (s *S) TestAuthLoginDatabase(c *C) {
 	// Test both with a normal database and with an authenticated shard.
 	for _, addr := range []string{"localhost:40002", "localhost:40203"} {
@@ -51,7 +54,7 @@ func (s *S) TestAuthLoginDatabase(c *C) {
 
 		coll := session.DB("mydb").C("mycoll")
 		err = coll.Insert(M{"n": 1})
-		c.Assert(err, ErrorMatches, "unauthorized|need to login|not authorized .*")
+		c.Assert(err, ErrorMatches, NoUserUnauthorizedErrorRegex)
 
 		admindb := session.DB("admin")
 
@@ -75,7 +78,7 @@ func (s *S) TestAuthLoginSession(c *C) {
 
 		coll := session.DB("mydb").C("mycoll")
 		err = coll.Insert(M{"n": 1})
-		c.Assert(err, ErrorMatches, "unauthorized|need to login|not authorized .*")
+		c.Assert(err, ErrorMatches, NoUserUnauthorizedErrorRegex)
 
 		cred := mgo.Credential{
 			Username: "root",
@@ -109,7 +112,7 @@ func (s *S) TestAuthLoginLogout(c *C) {
 
 		coll := session.DB("mydb").C("mycoll")
 		err = coll.Insert(M{"n": 1})
-		c.Assert(err, ErrorMatches, "unauthorized|need to login|not authorized .*")
+		c.Assert(err, ErrorMatches, NoUserUnauthorizedErrorRegex)
 
 		// Must have dropped auth from the session too.
 		session = session.Copy()
@@ -117,7 +120,7 @@ func (s *S) TestAuthLoginLogout(c *C) {
 
 		coll = session.DB("mydb").C("mycoll")
 		err = coll.Insert(M{"n": 1})
-		c.Assert(err, ErrorMatches, "unauthorized|need to login|not authorized .*")
+		c.Assert(err, ErrorMatches, NoUserUnauthorizedErrorRegex)
 	}
 }
 
@@ -134,7 +137,7 @@ func (s *S) TestAuthLoginLogoutAll(c *C) {
 
 	coll := session.DB("mydb").C("mycoll")
 	err = coll.Insert(M{"n": 1})
-	c.Assert(err, ErrorMatches, "unauthorized|need to login|not authorized .*")
+	c.Assert(err, ErrorMatches, NoUserUnauthorizedErrorRegex)
 
 	// Must have dropped auth from the session too.
 	session = session.Copy()
@@ -142,7 +145,7 @@ func (s *S) TestAuthLoginLogoutAll(c *C) {
 
 	coll = session.DB("mydb").C("mycoll")
 	err = coll.Insert(M{"n": 1})
-	c.Assert(err, ErrorMatches, "unauthorized|need to login|not authorized .*")
+	c.Assert(err, ErrorMatches, NoUserUnauthorizedErrorRegex)
 }
 
 func (s *S) TestAuthUpsertUserErrors(c *C) {
@@ -203,7 +206,7 @@ func (s *S) TestAuthUpsertUser(c *C) {
 
 	coll := session.DB("mydb").C("mycoll")
 	err = coll.Insert(M{"n": 1})
-	c.Assert(err, ErrorMatches, "unauthorized|not authorized .*")
+	c.Assert(err, ErrorMatches, UnauthorizedErrorRegex)
 
 	err = mydb.Login("myrwuser", "mypass")
 	c.Assert(err, IsNil)
@@ -236,7 +239,7 @@ func (s *S) TestAuthUpsertUser(c *C) {
 	// the roles for myrwuser are different there.
 	othercoll := myotherdb.C("myothercoll")
 	err = othercoll.Insert(M{"n": 1})
-	c.Assert(err, ErrorMatches, "unauthorized|not authorized .*")
+	c.Assert(err, ErrorMatches, UnauthorizedErrorRegex)
 
 	// Reading works, though.
 	err = othercoll.Find(nil).One(nil)
@@ -274,7 +277,7 @@ func (s *S) TestAuthUpsertUserOtherDBRoles(c *C) {
 
 	coll := session.DB("mydb").C("mycoll")
 	err = coll.Insert(M{"n": 1})
-	c.Assert(err, ErrorMatches, "unauthorized|not authorized .*")
+	c.Assert(err, ErrorMatches, UnauthorizedErrorRegex)
 
 	err = coll.Find(nil).One(nil)
 	c.Assert(err, Equals, mgo.ErrNotFound)
@@ -320,7 +323,7 @@ func (s *S) TestAuthUpsertUserUpdates(c *C) {
 	err = usession.DB("mydb").C("mycoll").Find(nil).One(nil)
 	c.Assert(err, Equals, mgo.ErrNotFound)
 	err = usession.DB("mydb").C("mycoll").Insert(M{"ok": 1})
-	c.Assert(err, ErrorMatches, "unauthorized|not authorized .*")
+	c.Assert(err, ErrorMatches, UnauthorizedErrorRegex)
 
 	// Update the user role.
 	user = &mgo.User{
@@ -362,7 +365,7 @@ func (s *S) TestAuthAddUser(c *C) {
 
 	coll := session.DB("mydb").C("mycoll")
 	err = coll.Insert(M{"n": 1})
-	c.Assert(err, ErrorMatches, "unauthorized|not authorized .*")
+	c.Assert(err, ErrorMatches, UnauthorizedErrorRegex)
 
 	err = mydb.Login("mywuser", "mypass")
 	c.Assert(err, IsNil)
@@ -395,7 +398,7 @@ func (s *S) TestAuthAddUserReplaces(c *C) {
 
 	// ReadOnly flag was changed too.
 	err = mydb.C("mycoll").Insert(M{"n": 1})
-	c.Assert(err, ErrorMatches, "unauthorized|not authorized .*")
+	c.Assert(err, ErrorMatches, UnauthorizedErrorRegex)
 }
 
 func (s *S) TestAuthRemoveUser(c *C) {
@@ -480,7 +483,7 @@ func (s *S) TestAuthLoginSwitchUser(c *C) {
 
 	// Can't write.
 	err = coll.Insert(M{"n": 1})
-	c.Assert(err, ErrorMatches, "unauthorized|not authorized .*")
+	c.Assert(err, ErrorMatches, UnauthorizedErrorRegex)
 
 	// But can read.
 	result := struct{ N int }{}
@@ -515,7 +518,7 @@ func (s *S) TestAuthLoginChangePassword(c *C) {
 
 	// The second login must be in effect, which means read-only.
 	err = mydb.C("mycoll").Insert(M{"n": 1})
-	c.Assert(err, ErrorMatches, "unauthorized|not authorized .*")
+	c.Assert(err, ErrorMatches, UnauthorizedErrorRegex)
 }
 
 func (s *S) TestAuthLoginCachingWithSessionRefresh(c *C) {
@@ -582,7 +585,7 @@ func (s *S) TestAuthLoginCachingWithNewSession(c *C) {
 
 	coll := session.DB("mydb").C("mycoll")
 	err = coll.Insert(M{"n": 1})
-	c.Assert(err, ErrorMatches, "unauthorized|need to login|not authorized .*")
+	c.Assert(err, ErrorMatches, NoUserUnauthorizedErrorRegex)
 }
 
 func (s *S) TestAuthLoginCachingAcrossPool(c *C) {
@@ -685,7 +688,7 @@ func (s *S) TestAuthLoginCachingAcrossPoolWithLogout(c *C) {
 	// Can't write, since root has been implicitly logged out
 	// when the collection went into the pool, and not revalidated.
 	err = other.DB("mydb").C("mycoll").Insert(M{"n": 1})
-	c.Assert(err, ErrorMatches, "unauthorized|not authorized .*")
+	c.Assert(err, ErrorMatches, UnauthorizedErrorRegex)
 
 	// But can read due to the revalidated myuser login.
 	result := struct{ N int }{}
@@ -794,7 +797,7 @@ func (s *S) TestAuthURLWithDatabase(c *C) {
 		err = ucoll.FindId(0).One(nil)
 		c.Assert(err, Equals, mgo.ErrNotFound)
 		err = ucoll.Insert(M{"n": 1})
-		c.Assert(err, ErrorMatches, "unauthorized|not authorized .*")
+		c.Assert(err, ErrorMatches, UnauthorizedErrorRegex)
 	}
 }
 
@@ -877,7 +880,7 @@ func (s *S) TestAuthScramSha1Cred(c *C) {
 
 	c.Logf("Connected! Testing the need for authentication...")
 	err = mycoll.Find(nil).One(nil)
-	c.Assert(err, ErrorMatches, "unauthorized|not authorized .*")
+	c.Assert(err, ErrorMatches, UnauthorizedErrorRegex)
 
 	c.Logf("Authenticating...")
 	err = session.Login(cred)
@@ -926,7 +929,7 @@ func (s *S) TestAuthScramSha256Cred(c *C) {
 
 	c.Logf("Connected! Testing the need for authentication (before login)...")
 	err = mycoll.Find(nil).One(nil)
-	c.Assert(err, ErrorMatches, "unauthorized|not authorized .*")
+	c.Assert(err, ErrorMatches, UnauthorizedErrorRegex)
 
 	c.Logf("Authenticating...")
 	err = session.Login(cred)
@@ -1059,7 +1062,7 @@ func (s *S) TestAuthX509Cred(c *C) {
 
 	c.Logf("Connected! Ensuring authentication is required...")
 	names, err := session.DatabaseNames()
-	c.Assert(err, ErrorMatches, "not authorized .*")
+	c.Assert(err, ErrorMatches, NoUserUnauthorizedErrorRegex)
 
 	cred := &mgo.Credential{
 		Username:  x509Subject,
@@ -1102,7 +1105,7 @@ func (s *S) TestAuthPlainCred(c *C) {
 
 	c.Logf("Connected! Testing the need for authentication...")
 	err = records.Find(nil).One(nil)
-	c.Assert(err, ErrorMatches, "unauthorized|not authorized .*")
+	c.Assert(err, ErrorMatches, UnauthorizedErrorRegex)
 
 	c.Logf("Authenticating...")
 	err = session.Login(cred)

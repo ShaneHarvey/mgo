@@ -294,7 +294,7 @@ func (s *S) TestInsertFindOneNil(c *C) {
 
 	coll := session.DB("mydb").C("mycoll")
 	err = coll.Find(nil).One(nil)
-	c.Assert(err, ErrorMatches, "unauthorized.*|not authorized.*")
+	c.Assert(err, ErrorMatches, UnauthorizedErrorRegex)
 }
 
 func (s *S) TestInsertFindOneMap(c *C) {
@@ -4126,7 +4126,7 @@ func (s *S) TestFindIterDoneErr(c *C) {
 	ok := iter.Next(&result)
 	c.Assert(iter.Done(), Equals, true)
 	c.Assert(ok, Equals, false)
-	c.Assert(iter.Err(), ErrorMatches, "unauthorized.*|not authorized.*")
+	c.Assert(iter.Err(), ErrorMatches, UnauthorizedErrorRegex)
 }
 
 func (s *S) TestFindIterDoneNotFound(c *C) {
