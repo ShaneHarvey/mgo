@@ -2314,13 +2314,13 @@ func (s *S) TestFindTailTimeoutBackgroundGetmore(c *C) {
 	// The following call to Next will timeout.
 	start := time.Now()
 	ok = iter.Next(&result)
-	end := time.Now()
+	actualTimeout := time.Now().Sub(start)
 	c.Assert(ok, Equals, false)
 	c.Assert(iter.Err(), IsNil)
 	c.Assert(iter.Timeout(), Equals, true)
 
-	if end.Sub(start) >= (timeout + 1 * time.Second) {
-		c.Errorf("Next took too long to timeout!")
+	if actualTimeout >= (timeout + 1 * time.Second) {
+		c.Errorf("Next() took too long to timeout: cursor timeout was %v but Next timed out after %v", timeout, actualTimeout)
 	}
 }
 
