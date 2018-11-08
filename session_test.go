@@ -2275,13 +2275,9 @@ func (s *S) TestFindTailNoTimeout(c *C) {
 	}
 }
 
-// Test tailable cursors in a situation where Next never gets to sleep once
-// to respect the timeout requested on Tail.
+// Test tailable cursors respect the timeout even when a getMore was
+// started from a previous call to Next.
 func (s *S) TestFindTailTimeoutBackgroundGetmore(c *C) {
-	if *fast {
-		c.Skip("-fast")
-	}
-
 	session, err := mgo.Dial("localhost:40001")
 	c.Assert(err, IsNil)
 
