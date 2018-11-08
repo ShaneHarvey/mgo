@@ -2275,6 +2275,57 @@ func (s *S) TestFindTailNoTimeout(c *C) {
 	}
 }
 
+// Test tailable cursors in a situation where Next never gets to sleep once
+// to respect the timeout requested on Tail.
+func (s *S) TestFindTailTimeoutBackgroundGetmore(c *C) {
+	if *fast {
+		c.Skip("-fast")
+	}
+
+	session, err := mgo.Dial("localhost:40001")
+	c.Assert(err, IsNil)
+
+	cresult := struct{ ErrMsg string }{}
+
+	db := session.DB("mydb")
+	err = db.Run(bson.D{{"create", "mycoll"}, {"capped", true}, {"size", 1024}}, &cresult)
+	c.Assert(err, IsNil)
+	c.Assert(cresult.ErrMsg, Equals, "")
+	coll := db.C("mycoll")
+
+	ns := []int{40, 41, 42}
+	for _, n := range ns {
+		coll.Insert(M{"n": n})
+	}
+
+	session.Refresh() // Release socket.
+
+	timeout := 5 * time.Second
+	query := coll.Find(M{"n": M{"$gte": 42}}).Sort("$natural").Prefetch(1.0)
+	iter := query.Tail(timeout)
+	c.Assert(iter.Err(), IsNil)
+
+	result := struct{ N int }{}
+	ok := iter.Next(&result)
+	c.Assert(ok, Equals, true)
+	c.Assert(iter.Err(), IsNil)
+	c.Assert(iter.Timeout(), Equals, false)
+	c.Assert(result.N, Equals, 42)
+
+	// The previous call to Next started a getMore in the background.
+	// The following call to Next will timeout.
+	start := time.Now()
+	ok = iter.Next(&result)
+	end := time.Now()
+	c.Assert(ok, Equals, false)
+	c.Assert(iter.Err(), IsNil)
+	c.Assert(iter.Timeout(), Equals, true)
+
+	if end.Sub(start) >= (timeout + 1 * time.Second) {
+		c.Errorf("Next took too long to timeout!")
+	}
+}
+
 func (s *S) TestIterNextResetsResult(c *C) {
 	session, err := mgo.Dial("localhost:40001")
 	c.Assert(err, IsNil)
