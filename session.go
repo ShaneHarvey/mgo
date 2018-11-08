@@ -3839,7 +3839,7 @@ func (iter *Iter) Next(result interface{}) bool {
 
 		// If we have yet to receive data, increment the timer until we timeout.
 		if iter.docsToReceive == 0 {
-			if iter.timeout >= 0 {
+			if !deadline.IsZero() {
 				if time.Now().After(deadline) {
 					iter.timedout = true
 					iter.m.Unlock()
