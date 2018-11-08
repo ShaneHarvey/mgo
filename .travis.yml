@@ -17,13 +17,23 @@ env:
         - GO=1.4.1 MONGODB=x86_64-3.2.3-nojournal
         - GO=1.5.3 MONGODB=x86_64-3.0.9
         - GO=1.6   MONGODB=x86_64-3.0.9
+        - GO=1.6   MONGODB=x86_64-3.2.21 URL=MONGO
+        - GO=1.6   MONGODB=x86_64-3.4.18 URL=MONGO
+        - GO=1.6   MONGODB=x86_64-3.6.8 URL=MONGO
+        - GO=1.6   MONGODB=x86_64-4.0.4 URL=MONGO
 
 install:
     - eval "$(gimme $GO)"
 
-    - wget $BUCKET/mongodb-linux-$MONGODB.tgz
+    - |
+      if [ "$URL" == "MONGO" ]; then
+        wget http://fastdl.mongodb.org/linux/mongodb-linux-${MONGODB}.tgz
+      else
+        wget $BUCKET/mongodb-linux-$MONGODB.tgz
+      fi
     - tar xzvf mongodb-linux-$MONGODB.tgz
     - export PATH=$PWD/mongodb-linux-$MONGODB/bin:$PATH
+    - mongod --version
 
     - wget $BUCKET/daemontools.tar.gz
     - tar xzvf daemontools.tar.gz
