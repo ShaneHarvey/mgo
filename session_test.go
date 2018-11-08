@@ -2280,6 +2280,7 @@ func (s *S) TestFindTailNoTimeout(c *C) {
 func (s *S) TestFindTailTimeoutBackgroundGetmore(c *C) {
 	session, err := mgo.Dial("localhost:40001")
 	c.Assert(err, IsNil)
+	defer session.Close()
 
 	cresult := struct{ ErrMsg string }{}
 
@@ -2300,6 +2301,7 @@ func (s *S) TestFindTailTimeoutBackgroundGetmore(c *C) {
 	query := coll.Find(M{"n": M{"$gte": 42}}).Sort("$natural").Prefetch(1.0)
 	iter := query.Tail(timeout)
 	c.Assert(iter.Err(), IsNil)
+	defer iter.Close()
 
 	result := struct{ N int }{}
 	ok := iter.Next(&result)
