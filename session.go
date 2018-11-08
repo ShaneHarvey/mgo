@@ -3833,7 +3833,7 @@ func (iter *Iter) Next(result interface{}) bool {
 	for iter.err == nil && iter.docData.Len() == 0 && (iter.docsToReceive > 0 || iter.op.cursorId != 0) {
 		// either there is a getMore running or we will schedule one, set
 		// the deadline regardless.
-		if deadline.IsZero() {
+		if iter.timeout >= 0 && deadline.IsZero() {
 			deadline = time.Now().Add(iter.timeout)
 		}
 
